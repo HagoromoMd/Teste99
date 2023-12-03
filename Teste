@@ -1,0 +1,286 @@
+local OrionLib = loadstring(game:HttpGet("https://raw.githubusercontent.com/RayzMd/Energy-shock-simulator/main/SyniX"))()
+local Window = OrionLib:MakeWindow({Name = "Batalha de guerra", HidePremium = false, SaveConfig = false, ConfigFolder = "Synix"})
+
+
+
+local PlayerTab = Window:MakeTab({
+    Name = "Player",
+    Icon = "rbxassetid://ID_DO_ICONE",
+    PremiumOnly = false
+})
+
+local autokickEnabled = false
+local friendsList = {}  -- Lista de amigos, inicialmente vazia
+
+local function isFriend(player)
+    for _, friend in ipairs(friendsList) do
+        if player.Name == friend then
+            return true
+        end
+    end
+    return false
+end
+
+local function updateFriendsList()
+    friendsList = {}  -- Limpa a lista para evitar duplicatas
+
+    -- Obtém a lista de amigos do jogador local
+    local success, friends = pcall(function()
+        return game.Players.LocalPlayer:GetFriends()
+    end)
+
+    if success then
+        for _, friend in pairs(friends) do
+            table.insert(friendsList, friend.Name)
+        end
+    else
+        warn("Erro ao obter a lista de amigos.")
+    end
+end
+
+local function autokick()
+  local Cam = workspace.CurrentCamera
+
+    local hotkey = true
+    local maxDistance = 90 -- Defina a distância máxima aqui
+
+    function lookAt(target, eye)
+        Cam.CFrame = CFrame.new(target, eye)
+    end
+
+    function getClosestEnemyPlayerToCursor(trg_part)
+        -- ...
+
+        for i, v in pairs(game.Players:GetPlayers()) do
+            if v ~= game.Players.LocalPlayer and game.Players.LocalPlayer.Character and v.Character and v.Character:FindFirstChild(trg_part) then
+                if game.Players.LocalPlayer.Character:FindFirstChild(trg_part) then
+                    -- Verifique se o jogador não está no mesmo time e não é um amigo
+                    if v.Team ~= game.Players.LocalPlayer.Team and not isFriend(v) then
+                         local ePos, vissss = workspace.CurrentCamera:WorldToViewportPoint(v.Character[trg_part].Position)
+                        local AccPos = Vector2.new(ePos.x, ePos.y)
+                        local mousePos = Vector2.new(workspace.CurrentCamera.ViewportSize.x / 2, workspace.CurrentCamera.ViewportSize.y / 2)
+                        local distance = (AccPos - mousePos).magnitude
+                        if distance < last and vissss and hotkey and distance < maxDistance then
+                            last = distance
+                            nearest = v
+
+                    end
+                end
+            end
+        end
+        return nearest
+    end
+
+    -- Resto do seu código permanece o mesmo...
+end
+
+local PlayerTab = Tab:AddDropdown({
+    Name = "Dropdown",
+    Default = "1",
+    Options = {"1", "2"},
+    Callback = function(Value)
+        print("Selected option: " .. Value)
+    end    
+})
+
+local toggle = PlayerTab:AddToggle({
+    Name = "Aimbot",
+    Default = false,
+    Callback = function(Value)
+        autokickEnabled = Value -- Set the autokick status
+        if Value then
+            updateFriendsList()  -- Atualiza a lista de amigos antes de começar o Aimbot
+            autokick()
+        end
+    end
+})
+
+
+
+local Section = PlayerTab:AddSection({
+    Name = "speed"
+})  
+local noclipEnabled = false
+
+local noclipEnabled = false
+
+PlayerTab:AddToggle({
+    Name = "Noclip",
+    Default = false,
+    Callback = function(value)
+        noclipEnabled = value
+        local player = game.Players.LocalPlayer
+        local character = player.Character
+
+        if noclipEnabled then
+            character:WaitForChild("Head").CanCollide = false
+            character:WaitForChild("Torso").CanCollide = false
+            character:WaitForChild("Humanoid").MaxHealth = math.huge
+            character:WaitForChild("Humanoid").Health = math.huge
+        end
+    end
+})
+
+game:GetService("RunService").Stepped:Connect(function()
+    if noclipEnabled then
+        local player = game.Players.LocalPlayer
+        local character = player.Character
+
+        if character and character:FindFirstChild("Humanoid") then
+            character:WaitForChild("Head").CanCollide = false
+            character:WaitForChild("Torso").CanCollide = false
+        end
+    end
+end)
+
+local InfiniteJumpEnabled = false  -- Adicionamos uma variável para rastrear o estado do pulo infinito
+
+PlayerTab:AddToggle({
+    Name = "Jump Infinito",
+    Default = false,
+    Callback = function(value)
+        _G.infinitojump = value
+        InfiniteJumpEnabled = value  -- Atualizamos o estado do pulo infinito ao ativar/desativar o toggle
+        while _G.infinitojump do
+            game:GetService("UserInputService").JumpRequest:Connect(function()
+                if InfiniteJumpEnabled then
+                    game:GetService("Players").LocalPlayer.Character:FindFirstChildOfClass("Humanoid"):ChangeState("Jumping")
+                end
+            end)
+            wait()
+        end
+    end
+})
+
+
+local function setSpeed(value)
+    local player = game.Players.LocalPlayer
+    local character = player.Character
+    if character and character:FindFirstChild("Humanoid") then
+        local humanoid = character:FindFirstChild("Humanoid")
+        humanoid.WalkSpeed = tonumber(value)
+    end
+end
+
+local speedEnabled = false
+local lastSelectedSpeed = "16"
+
+local speedToggle = PlayerTab:AddToggle({
+    Name = "Toggle Speed",
+    Default = false,
+    Callback = function(value)
+        speedEnabled = value
+        if value then
+            setSpeed(lastSelectedSpeed)
+        else
+            setSpeed("16")  -- Substitua "16" pela velocidade padrão quando o toggle é desativado
+        end
+    end
+})
+
+local speedDropdown = PlayerTab:AddDropdown({
+    Name = "Speed",
+    Default = "16",
+    Options = {"0", "5", "10", "16", "22", "30", "35", "40", "50", "55", "65", "70", "80", "90", "95", "100", "125", "150", "200", "250", "300", "325", "350", "375", "390", "400"},
+    Callback = function(value)
+        lastSelectedSpeed = value
+        if speedEnabled then
+            setSpeed(value)
+        end
+    end
+})
+
+
+local TeleportTab = Window:MakeTab({
+    Name = "Teleport",
+    Icon = "rbxassetid://ID_DO_ICONE",
+    PremiumOnly = false
+})
+
+TeleportTab:AddButton({
+    Name = " Telhado Bandeira",
+    Callback = function()
+        -- Defina as coordenadas para onde deseja teleportar
+local teleportLocation = CFrame.new(Vector3.new(-2261.867919921875, -267.2219543457031, 2619.297119140625))
+
+-- Encontre o jogador que você deseja teleportar
+local player = game.Players.LocalPlayer -- Substitua pelo jogador que deseja teleportar
+
+-- Teleporte o jogador para a coordenada
+player.Character:SetPrimaryPartCFrame(teleportLocation)
+
+    end
+})
+
+local EXTRASTab = Window:MakeTab({
+    Name = "EXTRAS",
+    Icon = "rbxassetid://ID_DO_ICONE",
+    PremiumOnly = false
+})
+
+EXTRASTab:AddButton({
+    Name = "FLY",
+    Callback = function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/XNEOFF/FlyGuiV3/main/FlyGuiV3.txt"))()
+    end
+})
+EXTRASTab:AddButton({
+    Name = "YIELD",
+    Callback = function()
+        loadstring(game:HttpGet('https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source'))()
+    end
+})
+
+
+
+PlayerTab:AddToggle({
+    Name = "Esp Player",
+    Default = false,
+    Callback = function(value)
+        isEspEnabled = value
+    end
+})
+
+local myTeamColor = Color3.fromRGB(0, 0, 255) -- Blue color for your team
+local enemyTeamColor = Color3.fromRGB(255, 0, 0) -- Red color for the enemy team
+
+while wait() do
+    pcall(function()
+        for i, v in pairs(game.Players:GetChildren()) do
+            if isEspEnabled then
+                local espName = "ESP_" .. v.UserId -- Unique ESP name for each player
+
+                if not v.Character.Head:FindFirstChild(espName) then
+                    local BillboardGui = Instance.new("BillboardGui")
+                    local TextLabel = Instance.new("TextLabel")
+
+                    BillboardGui.Parent = v.Character.Head
+                    BillboardGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+                    BillboardGui.Active = true
+                    BillboardGui.Name = espName
+                    BillboardGui.AlwaysOnTop = true
+                    BillboardGui.LightInfluence = 1.000
+                    BillboardGui.Size = UDim2.new(0, 200, 0, 50)
+                    BillboardGui.StudsOffset = Vector3.new(0, 2.5, 0)
+
+                    TextLabel.Parent = BillboardGui
+                    TextLabel.BackgroundColor3 = v.Team == game.Players.LocalPlayer.Team and myTeamColor or enemyTeamColor
+                    TextLabel.BackgroundTransparency = 1.000
+                    TextLabel.Size = UDim2.new(0, 200, 0, 50)
+                    TextLabel.Font = Enum.Font.GothamBold
+                    TextLabel.Text = v.Name
+                    TextLabel.TextColor3 = v.Team == game.Players.LocalPlayer.Team and myTeamColor or enemyTeamColor
+                    TextLabel.TextScaled = false
+                    TextLabel.TextSize = 11.00
+                    TextLabel.TextStrokeTransparency = 0.000
+                    TextLabel.TextWrapped = true
+                end
+            elseif not isEspEnabled then
+                local esp = v.Character.Head:FindFirstChild("ESP_" .. v.UserId)
+                if esp then
+                    esp:Remove()
+                end
+            end
+        end
+    end)
+end
